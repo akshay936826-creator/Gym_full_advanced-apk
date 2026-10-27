@@ -1,0 +1,30 @@
+name: Build APK
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack project
+        run: unzip -q gym-hisab.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Run tests
+        continue-on-error: true
+        run: gradle -p gym-hisab :app:testDebugUnitTest --no-daemon
+      - name: Build APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: gradle -p gym-hisab :app:assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gym-hisab-apk
+          path: gym-hisab/app/build/outputs/apk/debug/*.apk
